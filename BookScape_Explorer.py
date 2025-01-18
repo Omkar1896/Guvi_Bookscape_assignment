@@ -3,17 +3,16 @@ import pymysql
 import pandas as pd
 import altair as alt
 
-# Function to create a database connection
 def create_db_connection():
     return pymysql.connect(
-        host="localhost",       # Replace with your MySQL host
-        user="root",            # Replace with your MySQL username
-        password="Rumki@1819",  # Replace with your MySQL password
-        database="books_db",    # Replace with your database name
-        cursorclass=pymysql.cursors.DictCursor  # Use DictCursor for dictionary results
+        host="localhost",       
+        user="root",            
+        password="Rumki@1819",  
+        database="books_db",    
+        cursorclass=pymysql.cursors.DictCursor  # DictCursor for dictionary results
     )
 
-# Function to execute a query
+
 def execute_query(query):
     try:
         connection = create_db_connection()
@@ -25,7 +24,7 @@ def execute_query(query):
     except Exception as e:
         return {"error": str(e)}
 
-# Function to set the background image
+
 def set_bg_hack_url(image_url):
     st.markdown(
         f"""
@@ -39,12 +38,12 @@ def set_bg_hack_url(image_url):
         unsafe_allow_html=True
     )
 
-# Streamlit App
-# Title and Background Image
+
 st.set_page_config(page_title="BookScape Explorer", layout="wide")
 set_bg_hack_url("https://www.publicdomainpictures.net/pictures/320000/velka/book-background.jpg")  # Replace with a valid image URL
 
 st.title("📚 BookScape Explorer")
+st.text("Welcome to the World of Books..!")
 
 # Sidebar with Radio Buttons
 with st.sidebar:
@@ -57,29 +56,29 @@ if option == "Search":
     book_id = st.text_input("Enter Book ID:")
     if st.button("Submit"):
         if book_id:
-            query = f"SELECT * FROM books WHERE id = '{book_id}'"
+            query = f"SELECT * FROM books_db.test4 WHERE id = '{book_id}'"
             result = execute_query(query)
             if result and "error" not in result:
                 st.success("Book Found!")
-                st.json(result)  # Display book details in JSON format
+                st.json(result)  
             else:
                 st.error("No book found with the given ID.")
         else:
             st.error("Please enter a valid Book ID.")
 
-# Extract Functionality
+
 if option == "Extract":
     st.header("📊 Extract Data and Visualizations")
 
-    # List of predefined queries
+    
     queries = {
-        "Top 5 Most Expensive Books": "SELECT title, retail_price FROM books ORDER BY retail_price DESC LIMIT 5",
+        "Top 5 Most Expensive Books": "SELECT title, retail_price FROM books_db.test4 ORDER BY retail_price DESC LIMIT 5",
         "Books Published by Most Popular Publisher": """
             SELECT publisher, COUNT(*) as book_count
             FROM books
             GROUP BY publisher
             ORDER BY book_count DESC
-            LIMIT 1
+            LIMIT 2
         """,
         "Books Published After 2000": "SELECT title, published_date FROM books WHERE published_date > '2000-01-01'",
         "Checking Availability of eBooks vs Physical Books": "select count(*) from books_db.test4 WHERE is_ebook = 1",
@@ -120,6 +119,25 @@ if option == "Extract":
         Select title from
         books_db.test4
         Where title like '%Python%'
+        """,
+        "Authors who have published books in the same year but under different publishers":"""
+        select distinct authors,published_date,publisher,count(book_id) 
+        from books_db.test4
+        where authors is not null
+        and published_date is not null
+        and publisher is not null
+        group by published_date
+        having count(book_id) > 1
+        order by published_date;
+        """,
+        "Authors Who Published 3 Consecutive Years":"""
+        Select distinct published_date
+        from (Select published_date,
+		Lead (published_date,1) Over(order by book_id) As P,
+        Lead (published_date,2) Over(order by book_id) As Q
+        From books_db.test4
+        ) As PP
+        where published_date = P and published_date = Q;
         """
     }                                                      
 
